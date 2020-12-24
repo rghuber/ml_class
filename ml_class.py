@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import sys
 import numpy as np
 import pandas as pd
@@ -41,15 +41,15 @@ def print_accuracy_class(y_test,y_pred):
     acc  = 100.0 * (tpr*tnr*1.0e-4)**0.5
     sens = 100.0 * ( tp / ( tp + fn ))
     spec = 100.0 * ( tn / ( tn + fp ))
-    print "TPR  %8.3f (%4d)   FPR  %8.3f (%4d)"%(tpr,tp,fpr,fp)
-    print "FNR  %8.3f (%4d)   TNR  %8.3f (%4d)"%(fnr,fn,tnr,tn)
-    print "SENS %8.3f   SPEC %8.3f"%(sens,spec)
+    print("TPR  %8.3f (%4d)   FPR  %8.3f (%4d)"%(tpr,tp,fpr,fp))
+    print("FNR  %8.3f (%4d)   TNR  %8.3f (%4d)"%(fnr,fn,tnr,tn))
+    print("SENS %8.3f   SPEC %8.3f"%(sens,spec))
     try:
         prec = 100.0 * ( tp / ( fp + tp ))
-        print "ACC  %8.3f   PREC %8.3f"%(acc,prec)
+        print("ACC  %8.3f   PREC %8.3f"%(acc,prec))
     except:
         pass
-    print ""
+    print("")
 
 def print_accuracy_reg(y_test,y_pred):
     mue=0.0
@@ -60,8 +60,8 @@ def print_accuracy_reg(y_test,y_pred):
     mue=mue/float(len(y_pred))
     msqe=(msqe/float(len(y_pred)))**0.5
     r=np.corrcoef(y_test,y_pred)[0][1]
-    print "MUE: %8.3f  RMSE: %8.3f  Pearson R: %8.3f"%(mue,msqe,r)
-    print ""
+    print("MUE: %8.3f  RMSE: %8.3f  Pearson R: %8.3f"%(mue,msqe,r))
+    print("")
 
 def plot_accuracy_reg(y_test,y_pred,name):
     # plot square plot
@@ -71,16 +71,17 @@ def plot_accuracy_reg(y_test,y_pred,name):
     lim_lower=min_tot-0.05*span
     lim_upper=max_tot+0.05*span
 
-    plt.figure(1,figsize=(20,20))
-    plt.title(name)
-    plt.scatter(y_test,y_pred)
-    plt.xlabel("Y Test")
-    plt.ylabel("Y Predicted")
-    plt.xlim(lim_lower,lim_upper)
-    plt.ylim(lim_lower,lim_upper)
-    plt.plot([lim_lower,lim_upper],[lim_lower,lim_upper],ls="--")
-    plt.savefig("%s.svg"%(name),format='svg',dpi=300)
-    plt.clf()
+    with plt.xkcd():
+        plt.figure(1,figsize=(20,20))
+        plt.title(name)
+        plt.scatter(y_test,y_pred)
+        plt.xlabel("Y Test")
+        plt.ylabel("Y Predicted")
+        plt.xlim(lim_lower,lim_upper)
+        plt.ylim(lim_lower,lim_upper)
+        plt.plot([lim_lower,lim_upper],[lim_lower,lim_upper],ls="--")
+        plt.savefig("%s.svg"%(name),format='svg',dpi=300)
+        plt.clf()
 
 # READ DATA SET
 df=pd.read_csv("drug_descriptors.txt")
@@ -138,10 +139,10 @@ tpsa_test=[i[0] for i in  y_df.to_numpy()]
 
 
 # CLASSIFICATION: Predict Categories - e.g. CNS
-print "### CLASSIFICATION - CNS ###"
+print("### CLASSIFICATION - CNS ###")
 
 # SVM Classifier
-print "Running SVM Classifier"
+print("Running SVM Classifier")
 svcl_cns = SVC(gamma='auto')
 param_grid = [
         {'C' : [1.0,10.0,100.0,1000.0], 'kernel' : ['poly','rbf'], 'degree' : [2]}
@@ -154,19 +155,19 @@ y_pred=svcl_cns_gs.predict(X_test)
 print_accuracy_class(cns_test,y_pred)
 
 # KNeighbors Classifier
-print "Running KNeighbors Classifier"
+print("Running KNeighbors Classifier")
 knc_cns = KNeighborsClassifier(algorithm='ball_tree')
 param_grid = [
         {'n_neighbors' : [2,5,10,20,50], 'leaf_size' : [ 10, 20, 30, 40, 50] }
         ]
 knc_cns_gs = GridSearchCV(knc_cns, param_grid, scoring='balanced_accuracy', cv=5, refit = True, verbose = True )
 knc_cns_gs.fit(X_training, cns_training)
-print sorted(knc_cns_gs.cv_results_)
+print(sorted(knc_cns_gs.cv_results_))
 y_pred = knc_cns_gs.predict(X_test)
 print_accuracy_class(cns_test,y_pred)
 
 # DescisionTree Classifier
-print "Running DescisionTree Classifier"
+print("Running DescisionTree Classifier")
 dt_cns = DecisionTreeClassifier()
 param_grid = [
         {'max_depth' : [2,5,10,20], 'max_features' : [ 2, 5, 10, 20] }
@@ -175,75 +176,74 @@ dt_cns_gs = GridSearchCV(dt_cns, param_grid, scoring='balanced_accuracy', cv=5, 
 dt_cns_gs.fit(X_training, cns_training)
 #print sorted(dt_cns_gs.cv_results_)
 y_pred = dt_cns_gs.predict(X_test)
-print
 print_accuracy_class(cns_test,y_pred)
 
 # Random Forest Classifier
-print "Running Random Forest Classifier"
+print("Running Random Forest Classifier")
 rf_cns = RandomForestClassifier(n_estimators=10)
 param_grid = [
         {'n_estimators' : [5,10,20,50,100], 'max_features' : [ 10, 20, 30] }
         ]
 rf_cns_gs = GridSearchCV(rf_cns, param_grid, scoring='balanced_accuracy', cv=5, refit = True, verbose = True )
 rf_cns_gs.fit(X_training, cns_training)
-print rf_cns_gs.cv_results_['rank_test_score']
+print(rf_cns_gs.cv_results_['rank_test_score'])
 y_pred = rf_cns_gs.predict(X_test)
 print_accuracy_class(cns_test,y_pred)
 
 # Ridge Classifier
-print "Running Ridge Classifier"
+print("Running Ridge Classifier")
 ridge_cns = RidgeClassifier()
 param_grid = [
         {'alpha' : [1.0,0.1,0.01,0.001,0.0001] }
         ]
 ridge_cns_gs = GridSearchCV(ridge_cns, param_grid, scoring='balanced_accuracy', cv=5, refit = True, verbose = True, return_train_score = True )
 ridge_cns_gs.fit(X_training, cns_training)
-print ridge_cns_gs.cv_results_['rank_test_score']
+print(ridge_cns_gs.cv_results_['rank_test_score'])
 y_pred = ridge_cns_gs.predict(X_test)
 print_accuracy_class(cns_test,y_pred)
 
 # Bagging Classifier
-print "Running Bagging Classifier"
+print("Running Bagging Classifier")
 bg_cns = BaggingClassifier(RandomForestClassifier(), max_samples = 0.8, max_features = 1.0, n_estimators = 10)
 scores = cross_val_score(bg_cns, X_training, cns_training, cv=5)
-print scores
+print(scores)
 bg_cns.fit(X_training, cns_training)
 y_pred = bg_cns.predict(X_test)
 print_accuracy_class(cns_test,y_pred)
 
 # AdaBoost Classifier
-print "Running AdaBoost Classifier"
+print("Running AdaBoost Classifier")
 ada_cns = AdaBoostClassifier(DecisionTreeClassifier(), n_estimators = 10, learning_rate = 0.01)
 scores = cross_val_score(ada_cns, X_training, cns_training, cv=5)
-print scores
+print(scores)
 ada_cns.fit(X_training, cns_training)
 y_pred = ada_cns.predict(X_test)
 print_accuracy_class(cns_test,y_pred)
 
 # Gradient Boosting Classifier
-print "Running Gradient Boosting Classifier"
+print("Running Gradient Boosting Classifier")
 gb_cns = GradientBoostingClassifier(n_estimators = 100, learning_rate = 0.1, max_depth = 3)
 scores = cross_val_score(gb_cns, X_training, cns_training, cv=5)
-print scores
+print(scores)
 gb_cns.fit(X_training, cns_training)
 y_pred = gb_cns.predict(X_test)
 print_accuracy_class(cns_test,y_pred)
 
 # Voting Classifier
-print "Running Voting Classifier"
+print("Running Voting Classifier")
 vote_cns = VotingClassifier(estimators=[('svc',svcl_cns),('dt',dt_cns),('ridge',ridge_cns),('rf',rf_cns)])
 scores = cross_val_score(vote_cns, X_training, cns_training, cv=5)
-print scores
+print(scores)
 vote_cns.fit(X_training, cns_training)
 y_pred = vote_cns.predict(X_test)
 print_accuracy_class(cns_test,y_pred)
 
-print ""
-print ""
+print("")
+print("")
 # REGRESSION: Predict continuous quantities - e.g. xLogP
-print "### REGRESSION - xLogP ###"
+print("### REGRESSION - xLogP ###")
 
-print "Running Lasso Regression for xLogP"
+print("Running Lasso Regression for xLogP")
 lasso_xlogp = Lasso(max_iter=1e6)
 lasso_xlogp.fit(X_training, xlogp_training)
 y_pred = lasso_xlogp.predict(X_test)
@@ -257,14 +257,14 @@ plot_accuracy_reg(xlogp_test,y_pred,"Lasso_xLogP")
 #print_accuracy_reg(xlogp_test,y_pred)
 #plot_accuracy_reg(xlogp_test,y_pred,"LassoCV_xLogP")
 
-print "Running ElasticNet Regression for xLogP"
+print("Running ElasticNet Regression for xLogP")
 elnet_xlogp = ElasticNet(max_iter=1e5)
 elnet_xlogp.fit(X_training, xlogp_training)
 y_pred = elnet_xlogp.predict(X_test)
 print_accuracy_reg(xlogp_test,y_pred)
 plot_accuracy_reg(xlogp_test,y_pred,"Elastic_xLogP")
 
-print "Running SVR Regression for xLogP"
+print("Running SVR Regression for xLogP")
 SVR_xlogp = SVR(max_iter=1e5,gamma='auto',C=100.0,kernel='rbf')
 SVR_xlogp.fit(X_training, xlogp_training)
 y_pred = SVR_xlogp.predict(X_test)
@@ -279,7 +279,7 @@ plot_accuracy_reg(xlogp_test,y_pred,"SVR_xLogP")
 #print_accuracy_reg(xlogp_test,y_pred)
 #plot_accuracy_reg(xlogp_test,y_pred,"Ridge_xLogP")
 
-print "Running Ridge Regression for xLogP"
+print("Running Ridge Regression for xLogP")
 ridge_xlogp = Ridge(alpha=0.0001,max_iter=1e6)
 ridge_xlogp.fit(X_training, xlogp_training)
 y_pred = ridge_xlogp.predict(X_test)
@@ -288,13 +288,13 @@ plot_accuracy_reg(xlogp_test,y_pred,"Ridge_xLogP")
 
 
 
-print ""
-print ""
+print("")
+print("")
 # REGRESSION: Predict continuous quantities - e.g. TPSA
-print "### REGRESSION - TPSA ###"
+print("### REGRESSION - TPSA ###")
 
 
-print "Running Lasso Regression for TPSA"
+print("Running Lasso Regression for TPSA")
 lasso_tpsa = Lasso(max_iter=1e6)
 lasso_tpsa.fit(X_training, tpsa_training)
 y_pred = lasso_tpsa.predict(X_test)
@@ -310,21 +310,21 @@ plot_accuracy_reg(tpsa_test,y_pred,"Lasso_TPSA")
 #print_accuracy_reg(tpsa_test,y_pred)
 #plot_accuracy_reg(tpsa_test,y_pred,"LassoCV_TPSA")
 
-print "Running ElasticNet Regression for TPSA"
+print("Running ElasticNet Regression for TPSA")
 elnet_tpsa = ElasticNet(max_iter=1e5)
 elnet_tpsa.fit(X_training, tpsa_training)
 y_pred = elnet_tpsa.predict(X_test)
 print_accuracy_reg(tpsa_test,y_pred)
 plot_accuracy_reg(tpsa_test,y_pred,"Elastic_TPSA")
 
-print "Running SVR Regression for TPSA"
+print("Running SVR Regression for TPSA")
 SVR_tpsa = SVR(max_iter=1e5,gamma='auto',C=100.0,kernel='rbf')
 SVR_tpsa.fit(X_training, tpsa_training)
 y_pred = SVR_tpsa.predict(X_test)
 print_accuracy_reg(tpsa_test,y_pred)
 plot_accuracy_reg(tpsa_test,y_pred,"SVR_TPSA")
 
-print "Running Ridge Regression for TPSA"
+print("Running Ridge Regression for TPSA")
 ridge_tpsa = Ridge(alpha=0.0001,max_iter=1e5)
 ridge_tpsa.fit(X_training, tpsa_training)
 y_pred = ridge_tpsa.predict(X_test)

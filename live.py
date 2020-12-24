@@ -1,79 +1,65 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+import sys
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import scale,robust_scale
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.ensemble import BaggingClassifier
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import RobustScaler
+from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 from sklearn.metrics import confusion_matrix
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import Ridge
 
+df=pd.read_csv("drug_descriptors.txt")
 
-df = pd.read_csv("drug_descriptors.txt")
-features = [i for i in df.columns[5:40]]
+#print(df)
+#print(df.describe())
 
-#print df.describe()
+#print(df.columns) # all the columns in the data we read in
 
-df[features]=scale(df[features])
+feature_names=df.columns[5:] # get all columns starting from col5
+#print(feature_names)
 
-#print df.describe()
+X=df.loc[:,feature_names] # get a subtable of only features (not things we want to predict)
 
-X=df.loc[:,features]
+df[feature_names] = RobustScaler().fit_transform(df.loc[:,feature_names])
 
-#corr_X=np.corrcoef(X)
-#print corr_X
+train,test = train_test_split(df)
 
-train, test = train_test_split(df, test_size=0.2, random_state=3)
+# y is what we want to predict, X is the features
+X_train=train.loc[:,feature_names]
+X_test=test.loc[:,feature_names]
 
-X_training = train.loc[:,features]
-X_test = test.loc[:,features]
+y_train_cns=train.loc[:,' cns']
+y_test_cns=test.loc[:,' cns']
 
-# get y for cns
-y_df = train.loc[:,[' cns']]
-y_cns_training = [i[0] for i in y_df.to_numpy()]
-y_df = test.loc[:,[' cns']]
-y_cns_test = [i[0] for i in y_df.to_numpy()]
+y_train_logp=train.loc[:,' xlogp']
+y_test_logp=test.loc[:,' xlogp']
 
-# get y for xlogp
-y_df = train.loc[:,[' xlogp']]
-y_xlogp_training = [i[0] for i in y_df.to_numpy()]
-y_df = test.loc[:,[' xlogp']]
-y_xlogp_test = [i[0] for i in y_df.to_numpy()]
+#cns_SVC=SVC(C=100.0,kernel='poly',degree=3) # what model do i want? (type, and hyperparameters)
+#cns_SVC.fit(X_train,y_train_cns) # train model
+#y_pred_cns=cns_SVC.predict(X_test) # use model to predict
+#print(y_test_cns)
+#print(y_pred_cns)
+#
+#print(confusion_matrix(y_test_cns,y_pred_cns))
 
-# get y for tpsa
-y_df = train.loc[:,[' tpsa']]
-y_tpsa_training = [i[0] for i in y_df.to_numpy()]
-y_df = test.loc[:,[' tpsa']]
-y_tpsa_test = [i[0] for i in y_df.to_numpy()]
+#cns_DT=DecisionTreeClassifier(min_samples_split=5)
+#cns_DT.fit(X_train,y_train_cns)
+#y_pred_cns=cns_DT.predict(X_test)
+#print(y_test_cns.to_list())
+#print(list(y_pred_cns))
+#print(confusion_matrix(y_test_cns,y_pred_cns))
 
-#print y_tpsa_test
-#print len(y_tpsa_test)
-#print len(y_tpsa_training)
+#cns_RF=RandomForestClassifier()
+#cns_RF.fit(X_train,y_train_cns)
+#y_pred_cns=cns_RF.predict(X_test)
+#print(y_test_cns.to_list())
+#print(list(y_pred_cns))
+#print(confusion_matrix(y_test_cns,y_pred_cns))
 
-#PLAIN SVC Classifier
-svc_cns = SVC()
-svc_cns.fit(X_training, y_cns_training)
-y_pred_cns = svc_cns.predict(X_test)
-print confusion_matrix(y_cns_test, y_pred_cns)
+logp_ridge=Ridge()
+logp_ridge.fit(X_train,y_train_logp)
+y_pred_logp=logp_ridge.predict(X_test)
+print(np.corrcoef(y_pred_logp,y_test_logp))
 
-#GRID SEARCH FOR SVC Classifier Parameters (using cross-validation)
-param_grid = [
-        {'kernel' : ['rbf', 'poly'], 'C' : [1.0, 5.0, 10.0] }
-        ]
-#svc_cns_gs = GridSearchCV( svc_cns, param_grid, scoring='balanced_accuracy', cv = 10, refit = True, verbose = False)
-#svc_cns_gs.fit(X_training, y_cns_training)
-#y_pred_cns = svc_cns_gs.predict(X_test)
-print confusion_matrix(y_cns_test, y_pred_cns)
-
-#BAGGING Ensemble Classifier based on 10 KNeighborsClassifiers
-bagging_cns = BaggingClassifier( KNeighborsClassifier(), max_samples=0.5, max_features=0.5 )
-bagging_cns.fit(X_training, y_cns_training)
-y_pred_cns = bagging_cns.predict(X_test)
-print confusion_matrix(y_cns_test, y_pred_cns)
-
-#RIDGE Regression
-ridge_tpsa = Ridge()
-ridge_tpsa.fit(X_training, y_tpsa_training)
-y_pred_tpsa = ridge_tpsa.predict(X_test)
-print np.corrcoef(y_pred_tpsa, y_tpsa_test)
